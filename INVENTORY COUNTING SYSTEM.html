@@ -1,288 +1,518 @@
-<script>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>INVENTORY COUNTING SYSTEM</title>
 
-  const qrInput = document.getElementById('qrInput');
-  const tableBody = document.querySelector('#dataTable tbody');
-  const rowSelect = document.getElementById('rowSelect');
-  const duplicateAlert = document.getElementById('duplicateAlert');
-  const tableContainer = document.getElementById('tableContainer');
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  let rowCount = 0;
-  let scanDataList = [];
-  let scannedItems = [];
+  <style>
 
-  for (let i = 1; i <= 20; i++) {
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+    }
 
-    const option = document.createElement('option');
+    .container {
+      max-width: 100%;
+      margin: auto;
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
 
-    option.value = i;
-    option.text = 'Row ' + i;
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-    rowSelect.appendChild(option);
+    .scan-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      align-items: stretch;
+    }
 
-  }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+    }
 
-  qrInput.addEventListener('keypress', function(event) {
+    .row-group {
+      width: 200px;
+    }
 
-    if (event.key === 'Enter') {
+    .scan-group {
+      flex: 1;
+    }
 
-      const value = qrInput.value.trim();
+    label {
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
 
-      if (value !== '') {
+    input,
+    select {
+      width: 100%;
+      height: 54px;
+      padding: 14px;
+      font-size: 18px;
+      border: 2px solid #1976d2;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
 
-        parseQRCode(value);
+    .status {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
 
-        qrInput.value = '';
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
 
-      }
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #1976d2;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover {
+      background: #135ba1;
+    }
+
+    .delete-btn {
+      background: #d32f2f;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .delete-btn:hover {
+      background: #b71c1c;
+    }
+
+    .table-container {
+      width: 100%;
+      max-height: 500px;
+      overflow-x: auto;
+      overflow-y: auto;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      position: relative;
+    }
+
+    table {
+      min-width: 1500px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      background: #1976d2;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .location-column,
+    .part-column {
+      width: 220px;
+      min-width: 220px;
+    }
+
+    .latest-row {
+      background-color: #fff9c4;
+    }
+
+    #duplicateAlert {
+      display: none;
+      margin-top: 15px;
+      margin-bottom: 15px;
+      background: #ffebee;
+      color: #c62828;
+      padding: 14px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>INVENTORY COUNTING SYSTEM</h1>
+
+    <div class="scan-row">
+
+      <div class="field-group row-group">
+        <label>Select Row</label>
+        <select id="rowSelect"></select>
+      </div>
+
+      <div class="field-group scan-group">
+        <label>Scan QR Code</label>
+
+        <input
+          type="text"
+          id="qrInput"
+          placeholder="Scan QR Code Here..."
+          autofocus
+        />
+      </div>
+
+    </div>
+
+    <div id="duplicateAlert">
+      Item นี้ ถูกสแกนแล้ว ระบบจะไม่บันทึกข้อมูลซ้ำ กรุณาสแกน Item ถัดไป!
+    </div>
+
+    <div class="status" id="status">
+      Ready for Scan
+    </div>
+
+    <div class="button-group">
+      <button onclick="exportExcel()">Export Excel</button>
+      <button onclick="clearTable()">Clear Data</button>
+    </div>
+
+    <div class="table-container" id="tableContainer">
+
+      <table id="dataTable">
+
+        <thead>
+
+          <tr>
+            <th>Action</th>
+            <th>Row</th>
+            <th>No.</th>
+            <th>Line</th>
+            <th class="location-column">Location</th>
+            <th class="part-column">Part Item</th>
+            <th>Quantity</th>
+            <th>PO</th>
+            <th>LOT NO.</th>
+            <th>Scan Time</th>
+            <th>Remark</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    const qrInput = document.getElementById('qrInput');
+    const tableBody = document.querySelector('#dataTable tbody');
+    const rowSelect = document.getElementById('rowSelect');
+    const duplicateAlert = document.getElementById('duplicateAlert');
+
+    let rowCount = 0;
+    let scanDataList = [];
+    let scannedItems = [];
+
+    for (let i = 1; i <= 20; i++) {
+
+      const option = document.createElement('option');
+
+      option.value = i;
+      option.text = 'Row ' + i;
+
+      rowSelect.appendChild(option);
 
     }
 
-  });
+    qrInput.addEventListener('keypress', function(event) {
 
-  function parseQRCode(text) {
+      if (event.key === 'Enter') {
 
-    duplicateAlert.style.display = 'none';
+        const value = qrInput.value.trim();
 
-    const data = text.split('|');
+        if (value !== '') {
 
-    const line = data[1] || '-';
-    const location = data[2] || '-';
-    const part = data[4] || '-';
-    const qty = data[5] || '-';
-    const po = data[7] || '-';
-    const lot = data[8] || '-';
+          parseQRCode(value);
 
-    const itemKey = text.trim();
+          qrInput.value = '';
 
-    // ตรวจสอบข้อมูลซ้ำทั้ง QR
-    if (scannedItems.includes(itemKey)) {
+        }
 
-      duplicateAlert.style.display = 'block';
+      }
+
+    });
+
+    function parseQRCode(text) {
+
+      duplicateAlert.style.display = 'none';
+
+      const data = text.split('|');
+
+      const line = data[1] || '-';
+      const location = data[2] || '-';
+      const part = data[4] || '-';
+      const qty = data[5] || '-';
+      const po = data[7] || '-';
+      const lot = data[8] || '-';
+
+      const itemKey = text.trim();
+
+      if (scannedItems.includes(itemKey)) {
+
+        duplicateAlert.style.display = 'block';
+
+        document.getElementById('status').innerText =
+          'Duplicate Item';
+
+        qrInput.focus();
+
+        return;
+
+      }
+
+      scannedItems.push(itemKey);
+
+      rowCount++;
+
+      const selectedRow = rowSelect.value;
+
+      const scanTime = new Date().toLocaleString();
+
+      let duplicateRows = [];
+
+      scanDataList.forEach(item => {
+
+        if (
+          item.PartItem === part &&
+          item.Row != selectedRow &&
+          !duplicateRows.includes(item.Row)
+        ) {
+
+          duplicateRows.push(item.Row);
+
+        }
+
+      });
+
+      let remark = '';
+
+      if (duplicateRows.length > 0) {
+
+        remark =
+          'ข้อมูล Part item ซ้ำกับแถวที่ ' +
+          duplicateRows.join(', ');
+
+      }
+
+      document.querySelectorAll('.latest-row').forEach(row => {
+        row.classList.remove('latest-row');
+      });
+
+      const row = `
+        <tr class="latest-row" data-key="${itemKey}">
+
+          <td>
+            <button
+              class="delete-btn"
+              onclick="deleteRow('${itemKey}', this)"
+            >
+              Delete
+            </button>
+          </td>
+
+          <td>${selectedRow}</td>
+          <td>${rowCount}</td>
+          <td>${line}</td>
+          <td class="location-column">${location}</td>
+          <td class="part-column">${part}</td>
+          <td>${qty}</td>
+          <td>${po}</td>
+          <td>${lot}</td>
+          <td>${scanTime}</td>
+          <td>${remark}</td>
+
+        </tr>
+      `;
+
+      tableBody.insertAdjacentHTML('beforeend', row);
+
+      const latestRow =
+        tableBody.lastElementChild;
+
+      latestRow.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+
+      scanDataList.push({
+
+        Row: selectedRow,
+        No: rowCount,
+        Line: line,
+        Location: location,
+        PartItem: part,
+        Quantity: qty,
+        PO: po,
+        LOTNO: lot,
+        ScanTime: scanTime,
+        Remark: remark,
+        itemKey: itemKey
+
+      });
 
       document.getElementById('status').innerText =
-        'Duplicate Item';
+        'Scan Success';
 
       qrInput.focus();
 
-      return;
-
     }
 
-    scannedItems.push(itemKey);
+    function exportExcel() {
 
-    rowCount++;
+      if (scanDataList.length === 0) {
 
-    const selectedRow = rowSelect.value;
+        alert('No data to export');
 
-    const scanTime = new Date().toLocaleString();
-
-    // ตรวจสอบ Part Item ซ้ำต่างแถว
-    let duplicateRows = [];
-
-    scanDataList.forEach(item => {
-
-      if (
-        item.PartItem === part &&
-        item.Row != selectedRow &&
-        !duplicateRows.includes(item.Row)
-      ) {
-
-        duplicateRows.push(item.Row);
+        return;
 
       }
 
-    });
+      const detailWorksheet =
+        XLSX.utils.json_to_sheet(scanDataList);
 
-    let remark = '';
+      const summaryMap = {};
 
-    if (duplicateRows.length > 0) {
+      scanDataList.forEach(item => {
 
-      remark =
-        'ข้อมูล Part item ซ้ำกับแถวที่ ' +
-        duplicateRows.join(', ');
+        if (!summaryMap[item.PartItem]) {
 
-    }
+          summaryMap[item.PartItem] = {
 
-    // ลบ highlight เก่า
-    document.querySelectorAll('.latest-row').forEach(row => {
-      row.classList.remove('latest-row');
-    });
+            PartItem: item.PartItem,
+            TotalQty: 0,
+            Rows: []
 
-    // เพิ่มข้อมูลลงตาราง
-    const row = `
-      <tr class="latest-row" data-key="${itemKey}">
+          };
 
-        <td>
-          <button
-            class="delete-btn"
-            onclick="deleteRow('${itemKey}', this)"
-          >
-            Delete
-          </button>
-        </td>
+        }
 
-        <td>${selectedRow}</td>
-        <td>${rowCount}</td>
-        <td>${line}</td>
-        <td class="location-column">${location}</td>
-        <td class="part-column">${part}</td>
-        <td>${qty}</td>
-        <td>${po}</td>
-        <td>${lot}</td>
-        <td>${scanTime}</td>
-        <td>${remark}</td>
+        summaryMap[item.PartItem].TotalQty +=
+          Number(item.Quantity) || 0;
 
-      </tr>
-    `;
+        if (!summaryMap[item.PartItem].Rows.includes(item.Row)) {
 
-    tableBody.insertAdjacentHTML('beforeend', row);
+          summaryMap[item.PartItem].Rows.push(item.Row);
 
-    // Scroll ไปแถวล่าสุด
-    const latestRow = tableBody.lastElementChild;
+        }
 
-    latestRow.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
+      });
 
-    // เก็บข้อมูล
-    scanDataList.push({
-
-      Row: selectedRow,
-      No: rowCount,
-      Line: line,
-      Location: location,
-      PartItem: part,
-      Quantity: qty,
-      PO: po,
-      LOTNO: lot,
-      ScanTime: scanTime,
-      Remark: remark,
-      itemKey: itemKey
-
-    });
-
-    document.getElementById('status').innerText =
-      'Scan Success';
-
-    qrInput.focus();
-
-  }
-
-  function exportExcel() {
-
-    if (scanDataList.length === 0) {
-
-      alert('No data to export');
-
-      return;
-
-    }
-
-    const detailWorksheet =
-      XLSX.utils.json_to_sheet(scanDataList);
-
-    const summaryMap = {};
-
-    scanDataList.forEach(item => {
-
-      if (!summaryMap[item.PartItem]) {
-
-        summaryMap[item.PartItem] = {
+      const summaryData =
+        Object.values(summaryMap).map(item => ({
 
           PartItem: item.PartItem,
-          TotalQty: 0,
-          Rows: []
+          TotalQuantity: item.TotalQty,
+          Rows: item.Rows.join(', ')
 
-        };
+        }));
 
-      }
+      const summaryWorksheet =
+        XLSX.utils.json_to_sheet(summaryData);
 
-      summaryMap[item.PartItem].TotalQty +=
-        Number(item.Quantity) || 0;
+      const workbook = XLSX.utils.book_new();
 
-      if (!summaryMap[item.PartItem].Rows.includes(item.Row)) {
+      XLSX.utils.book_append_sheet(
+        workbook,
+        detailWorksheet,
+        'QR Data'
+      );
 
-        summaryMap[item.PartItem].Rows.push(item.Row);
+      XLSX.utils.book_append_sheet(
+        workbook,
+        summaryWorksheet,
+        'Summary'
+      );
 
-      }
+      const today = new Date();
 
-    });
+      const fileName =
+        today.getFullYear() +
+        '-' +
+        String(today.getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(today.getDate()).padStart(2, '0') +
+        '.xlsx';
 
-    const summaryData =
-      Object.values(summaryMap).map(item => ({
+      XLSX.writeFile(workbook, fileName);
 
-        PartItem: item.PartItem,
-        TotalQuantity: item.TotalQty,
-        Rows: item.Rows.join(', ')
+    }
 
-      }));
+    function deleteRow(itemKey, button) {
 
-    const summaryWorksheet =
-      XLSX.utils.json_to_sheet(summaryData);
+      const row = button.closest('tr');
 
-    const workbook = XLSX.utils.book_new();
+      row.remove();
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      detailWorksheet,
-      'QR Data'
-    );
+      scanDataList =
+        scanDataList.filter(item => item.itemKey !== itemKey);
 
-    XLSX.utils.book_append_sheet(
-      workbook,
-      summaryWorksheet,
-      'Summary'
-    );
+      scannedItems =
+        scannedItems.filter(item => item !== itemKey);
 
-    const today = new Date();
+      document.getElementById('status').innerText =
+        'Row Deleted';
 
-    const fileName =
-      today.getFullYear() +
-      '-' +
-      String(today.getMonth() + 1).padStart(2, '0') +
-      '-' +
-      String(today.getDate()).padStart(2, '0') +
-      '.xlsx';
+    }
 
-    XLSX.writeFile(workbook, fileName);
+    function clearTable() {
 
-  }
+      tableBody.innerHTML = '';
 
-  function deleteRow(itemKey, button) {
+      scanDataList = [];
+      scannedItems = [];
+      rowCount = 0;
 
-    const row = button.closest('tr');
+      duplicateAlert.style.display = 'none';
 
-    row.remove();
+      document.getElementById('status').innerText =
+        'Data Cleared';
 
-    scanDataList =
-      scanDataList.filter(item => item.itemKey !== itemKey);
+      qrInput.focus();
 
-    scannedItems =
-      scannedItems.filter(item => item !== itemKey);
-
-    document.getElementById('status').innerText =
-      'Row Deleted';
-
-  }
-
-  function clearTable() {
-
-    tableBody.innerHTML = '';
-
-    scanDataList = [];
-    scannedItems = [];
-    rowCount = 0;
-
-    duplicateAlert.style.display = 'none';
-
-    document.getElementById('status').innerText =
-      'Data Cleared';
+    }
 
     qrInput.focus();
 
-  }
+  </script>
 
-  qrInput.focus();
-
-</script>
+</body>
+</html>
