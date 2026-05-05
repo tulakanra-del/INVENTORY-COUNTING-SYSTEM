@@ -171,214 +171,100 @@
 
   function exportExcel() {
 
-  if (scanDataList.length === 0) {
+    if (scanDataList.length === 0) {
 
-    alert('No data to export');
-    return;
+      alert('No data to export');
 
-  }
-
-  // =========================
-  // DETAIL SHEET
-  // =========================
-
-  const detailWorksheet =
-    XLSX.utils.json_to_sheet(scanDataList);
-
-  // =========================
-  // SUMMARY SHEET
-  // =========================
-
-  const summaryMap = {};
-
-  scanDataList.forEach(item => {
-
-    if (!summaryMap[item.PartItem]) {
-
-      summaryMap[item.PartItem] = {
-
-        PartItem: item.PartItem,
-        TotalQty: 0,
-        Rows: []
-
-      };
+      return;
 
     }
 
-    summaryMap[item.PartItem].TotalQty +=
-      Number(item.Quantity) || 0;
+    const detailWorksheet =
+      XLSX.utils.json_to_sheet(scanDataList);
 
-    if (!summaryMap[item.PartItem].Rows.includes(item.Row)) {
+    const summaryMap = {};
 
-      summaryMap[item.PartItem].Rows.push(item.Row);
+    scanDataList.forEach(item => {
 
-    }
+      if (!summaryMap[item.PartItem]) {
 
-  });
+        summaryMap[item.PartItem] = {
 
-  const summaryData =
-    Object.values(summaryMap).map(item => ({
+          PartItem: item.PartItem,
+          TotalQty: 0,
+          Rows: []
 
-      PartItem: item.PartItem,
-      TotalQuantity: item.TotalQty,
-      Rows: item.Rows.join(', ')
+        };
 
-    }));
+      }
 
-  const summaryWorksheet =
-    XLSX.utils.json_to_sheet(summaryData);
+      summaryMap[item.PartItem].TotalQty +=
+        Number(item.Quantity) || 0;
 
-  // =========================
-  // PRINT SHEET
-  // =========================
+      if (!summaryMap[item.PartItem].Rows.includes(item.Row)) {
 
-  const printData = [];
+        summaryMap[item.PartItem].Rows.push(item.Row);
 
-  // Group by Row
-  const rowGroups = {};
-
-  scanDataList.forEach(item => {
-
-    if (!rowGroups[item.Row]) {
-
-      rowGroups[item.Row] = [];
-
-    }
-
-    rowGroups[item.Row].push(item);
-
-  });
-
-  Object.keys(rowGroups).forEach(row => {
-
-    const items = rowGroups[row];
-
-    let grandTotal = 0;
-
-    // =========================
-    // HEADER
-    // =========================
-
-    printData.push([`Row ${row}`]);
-    printData.push([]);
-
-    // Part Item
-    printData.push([
-      'Part Item',
-      ':',
-      items[0].PartItem
-    ]);
-
-    // Part Name
-    printData.push([
-      'Part name',
-      ':',
-      items[0].Location
-    ]);
-
-    printData.push([]);
-
-    // Table Header
-    printData.push([
-      'Quantity',
-      '',
-      'Box or Pack',
-      '',
-      'Total'
-    ]);
-
-    // =========================
-    // DATA
-    // =========================
-
-    items.forEach(item => {
-
-      const qty = Number(item.Quantity) || 0;
-
-      const box = 1;
-
-      const total = qty * box;
-
-      grandTotal += total;
-
-      printData.push([
-        qty,
-        'x',
-        box,
-        '=',
-        total
-      ]);
+      }
 
     });
 
-    // =========================
-    // GRAND TOTAL
-    // =========================
+    const summaryData =
+      Object.values(summaryMap).map(item => ({
 
-    printData.push([]);
+        PartItem: item.PartItem,
+        TotalQuantity: item.TotalQty,
+        Rows: item.Rows.join(', ')
 
-    printData.push([
-      '',
-      '',
-      'Grand total',
-      '',
-      grandTotal
-    ]);
+      }));
 
-    // เว้นบรรทัด
-    printData.push([]);
-    printData.push([]);
+    const summaryWorksheet =
+      XLSX.utils.json_to_sheet(summaryData);
 
-  });
+    const workbook = XLSX.utils.book_new();
 
-  const printWorksheet =
-    XLSX.utils.aoa_to_sheet(printData);
+    XLSX.utils.book_append_sheet(
+      workbook,
+      detailWorksheet,
+      'QR Data'
+    );
 
-  // =========================
-  // CREATE WORKBOOK
-  // =========================
+    XLSX.utils.book_append_sheet(
+      workbook,
+      summaryWorksheet,
+      'Summary'
+    );
 
-  const workbook = XLSX.utils.book_new();
+    const today = new Date();
 
-  XLSX.utils.book_append_sheet(
-    workbook,
-    detailWorksheet,
-    'QR Data'
-  );
+    const fileName =
+      today.getFullYear() +
+      '-' +
+      String(today.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(today.getDate()).padStart(2, '0') +
+      '.xlsx';
 
-  XLSX.utils.book_append_sheet(
-    workbook,
-    summaryWorksheet,
-    'Summary'
-  );
+    XLSX.writeFile(workbook, fileName);
 
-  XLSX.utils.book_append_sheet(
-    workbook,
-    printWorksheet,
-    'Print'
-  );
+  }
 
-  // =========================
-  // FILE NAME
-  // =========================
+  function deleteRow(itemKey, button) {
 
-  const today = new Date();
+    const row = button.closest('tr');
 
-  const fileName =
-    today.getFullYear() +
-    '-' +
-    String(today.getMonth() + 1).padStart(2, '0') +
-    '-' +
-    String(today.getDate()).padStart(2, '0') +
-    '.xlsx';
+    row.remove();
 
-  // =========================
-  // EXPORT
-  // =========================
+    scanDataList =
+      scanDataList.filter(item => item.itemKey !== itemKey);
 
-  XLSX.writeFile(workbook, fileName);
+    scannedItems =
+      scannedItems.filter(item => item !== itemKey);
 
-}
+    document.getElementById('status').innerText =
+      'Row Deleted';
+
+  }
 
   function clearTable() {
 
