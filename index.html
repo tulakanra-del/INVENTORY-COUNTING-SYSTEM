@@ -6,91 +6,170 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>INVENTORY COUNTING SYSTEM</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
 <style>
 
-body {
-  font-family: Arial;
-  background: #f4f6f9;
-  margin: 0;
-  padding: 20px;
-  color: #111;
+body{
+  font-family:Arial,sans-serif;
+  background:#f4f6f9;
+  margin:0;
+  padding:20px;
+  color:#111;
 }
 
-.container {
-  max-width: 1200px;
-  margin: auto;
-  background: #fff;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+.container{
+  max-width:1300px;
+  margin:auto;
+  background:#fff;
+  padding:24px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.08);
 }
 
-.scan-row {
-  display: flex;
-  gap: 15px;
+h2{
+  margin-top:0;
 }
 
-input, select {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
+/* ======================
+   INPUT
+====================== */
+
+.scan-row{
+  display:flex;
+  gap:15px;
+  margin-bottom:15px;
 }
 
-button {
-  padding: 12px 16px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: bold;
+input,select{
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid #cbd5e1;
+  box-sizing:border-box;
 }
 
-.btn-blue { background:#2563eb; color:#fff; }
-.btn-red { background:#dc2626; color:#fff; }
+/* ======================
+   BUTTON
+====================== */
 
-.table-container {
-  max-height: 420px;
-  overflow-y: auto;
-  margin-top: 15px;
-  border: 1px solid #ddd;
+button{
+  padding:12px 16px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+.btn-blue{
+  background:#2563eb;
+  color:#fff;
 }
 
-th, td {
-  border: 1px solid #e5e7eb;
-  padding: 8px;
-  font-size: 13px;
+.btn-red{
+  background:#dc2626;
+  color:#fff;
 }
 
-th {
-  background: #f1f5f9;
-  position: sticky;
-  top: 0;
+.del-btn{
+  background:#ef4444;
+  color:#fff;
+  padding:6px 10px;
+  border-radius:6px;
+  font-size:12px;
 }
 
-.del-btn {
-  background: #ef4444;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 6px;
+/* ======================
+   TABLE
+====================== */
+
+.table-container{
+  margin-top:20px;
+  max-height:420px;
+  overflow:auto;
+  border:1px solid #ddd;
+  border-radius:10px;
 }
 
-.box {
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 10px;
+table{
+  width:100%;
+  border-collapse:collapse;
 }
 
-.latest {
-  background: #fff7cc;
+th,td{
+  border:1px solid #e5e7eb;
+  padding:8px;
+  font-size:13px;
+  white-space:nowrap;
+}
+
+th{
+  background:#f1f5f9;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+
+.latest{
+  background:#fff7cc;
+}
+
+/* ======================
+   SUMMARY DASHBOARD
+====================== */
+
+#summaryWrapper{
+  margin-top:20px;
+  border:1px solid #ddd;
+  border-radius:10px;
+  max-height:350px;
+  overflow-y:auto;
+  padding:12px;
+  background:#fafafa;
+}
+
+.summary-box{
+  background:#fff;
+  border:2px solid #e5e7eb;
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:12px;
+  transition:0.2s;
+}
+
+.summary-focus{
+  border:2px solid #2563eb;
+  background:#eff6ff;
+  box-shadow:0 0 0 3px rgba(37,99,235,0.15);
+}
+
+.summary-title{
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.total-box{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid #ddd;
+  font-weight:bold;
+}
+
+/* ======================
+   ALERT
+====================== */
+
+#duplicateAlert{
+  display:none;
+  background:#fee2e2;
+  color:#991b1b;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:15px;
+  font-weight:bold;
 }
 
 </style>
@@ -105,105 +184,200 @@ th {
 
 <div class="scan-row">
 
-  <select id="rowSelect"></select>
-  <input id="qrInput" placeholder="Scan QR..." autofocus />
+<select id="rowSelect"></select>
+
+<input
+  id="qrInput"
+  placeholder="Scan QR Code..."
+  autofocus
+/>
 
 </div>
 
-<br>
+<div id="duplicateAlert">
+⚠ Duplicate Item
+</div>
 
-<button class="btn-blue" onclick="exportExcel()">Export Excel</button>
-<button class="btn-red" onclick="clearAll()">Clear</button>
+<button class="btn-blue" onclick="exportExcel()">
+Export Excel
+</button>
 
+<button class="btn-red" onclick="clearAll()">
+Clear
+</button>
+
+<!-- TABLE -->
 <div class="table-container">
+
 <table>
+
 <thead>
 <tr>
-  <th>Row</th>
-  <th>No</th>
-  <th>Line</th>
-  <th>Location</th>
-  <th>Part</th>
-  <th>Qty</th>
-  <th>PO</th>
-  <th>LOT</th>
-  <th>Remark</th>
-  <th>Time</th>
-  <th>Action</th>
+<th>Row</th>
+<th>No</th>
+<th>Line</th>
+<th>Location</th>
+<th>Part</th>
+<th>Qty</th>
+<th>PO</th>
+<th>LOT</th>
+<th>Remark</th>
+<th>Time</th>
+<th>Action</th>
 </tr>
 </thead>
+
 <tbody id="tb"></tbody>
+
 </table>
+
 </div>
+
+<!-- SUMMARY -->
+<div id="summaryWrapper">
 
 <div id="summary"></div>
 
 </div>
 
+</div>
+
 <script>
+
+/* ======================
+   GLOBAL
+====================== */
 
 let data = [];
 let scanned = [];
+let latestRowFocus = "";
 
-const tb = document.getElementById("tb");
-const qr = document.getElementById("qrInput");
-const rowSelect = document.getElementById("rowSelect");
+const tb =
+document.getElementById("tb");
+
+const qr =
+document.getElementById("qrInput");
+
+const rowSelect =
+document.getElementById("rowSelect");
+
+/* ======================
+   CREATE ROW SELECT
+====================== */
 
 for(let i=1;i<=20;i++){
-  rowSelect.innerHTML += `<option value="${i}">Row ${i}</option>`;
+
+  rowSelect.innerHTML += `
+    <option value="${i}">
+      Row ${i}
+    </option>
+  `;
+
 }
 
-/* SCAN */
+/* ======================
+   SCAN EVENT
+====================== */
+
 qr.addEventListener("keypress",e=>{
+
   if(e.key==="Enter"){
+
     scan(qr.value);
+
     qr.value="";
+
   }
+
 });
+
+/* ======================
+   SCAN FUNCTION
+====================== */
 
 function scan(v){
 
-  if(scanned.includes(v)) return;
+  document.getElementById("duplicateAlert").style.display="none";
+
+  if(scanned.includes(v)){
+
+    document.getElementById("duplicateAlert").style.display="block";
+
+    return;
+
+  }
 
   scanned.push(v);
 
   const d = v.split("|");
 
   const row = rowSelect.value;
-  const line = d[1]||"-";
-  const location = d[2]||"-";
-  const part = d[4]||"-";
-  const qty = parseInt(d[5])||0;
-  const po = d[7]||"-";
-  const lot = d[8]||"-";
-  const time = new Date().toLocaleString();
 
-  /* REMARK CHECK */
+  latestRowFocus = row;
+
+  const line = d[1] || "-";
+  const location = d[2] || "-";
+  const part = d[4] || "-";
+  const qty = parseInt(d[5]) || 0;
+  const po = d[7] || "-";
+  const lot = d[8] || "-";
+
+  const time =
+    new Date().toLocaleString();
+
+  /* REMARK */
+
   let duplicateRows = [];
 
   data.forEach(item=>{
-    if(item.part===part && item.row!==row){
-      if(!duplicateRows.includes(item.row)){
-        duplicateRows.push(item.row);
-      }
+
+    if(
+      item.part === part &&
+      item.row !== row &&
+      !duplicateRows.includes(item.row)
+    ){
+      duplicateRows.push(item.row);
     }
+
   });
 
   let remark = "";
 
-  if(duplicateRows.length>0){
-    remark = "ข้อมูล Part item ซ้ำกับแถว " + duplicateRows.join(", ");
+  if(duplicateRows.length > 0){
+
+    remark =
+      "ข้อมูล Part item ซ้ำกับแถว " +
+      duplicateRows.join(", ");
+
   }
 
+  /* PUSH */
+
   data.push({
-    row,line,location,part,qty,po,lot,remark,time,key:v
+
+    row,
+    line,
+    location,
+    part,
+    qty,
+    po,
+    lot,
+    remark,
+    time,
+    key:v
+
   });
 
   render();
+
   qr.focus();
+
 }
 
-/* RENDER TABLE */
+/* ======================
+   RENDER TABLE
+====================== */
+
 function render(){
 
   tb.innerHTML="";
@@ -211,7 +385,9 @@ function render(){
   data.forEach((x,i)=>{
 
     tb.innerHTML += `
+
       <tr class="${i===data.length-1?'latest':''}">
+
         <td>${x.row}</td>
         <td>${i+1}</td>
         <td>${x.line}</td>
@@ -222,109 +398,349 @@ function render(){
         <td>${x.lot}</td>
         <td>${x.remark}</td>
         <td>${x.time}</td>
-        <td><button class="del-btn" onclick="del(${i})">Delete</button></td>
+
+        <td>
+          <button
+            class="del-btn"
+            onclick="del(${i})"
+          >
+            Delete
+          </button>
+        </td>
+
       </tr>
+
     `;
 
   });
 
-  document.querySelector(".table-container").scrollTop =
-  document.querySelector(".table-container").scrollHeight;
+  /* TABLE AUTO SCROLL ONLY */
+  const tableBox =
+    document.querySelector(".table-container");
+
+  tableBox.scrollTop =
+    tableBox.scrollHeight;
 
   renderSummary();
+
 }
 
-/* DELETE */
+/* ======================
+   DELETE
+====================== */
+
 function del(i){
-  scanned = scanned.filter(x=>x!==data[i].key);
+
+  scanned =
+    scanned.filter(x=>x!==data[i].key);
+
   data.splice(i,1);
+
   render();
+
 }
 
-/* SUMMARY */
+/* ======================
+   SUMMARY DASHBOARD
+====================== */
+
 function renderSummary(){
 
-  let s={};
+  let s = {};
 
   data.forEach(x=>{
-    if(!s[x.row]) s[x.row]={};
-    if(!s[x.row][x.part]) s[x.row][x.part]={c:0,q:x.qty};
+
+    if(!s[x.row]) s[x.row] = {};
+
+    if(!s[x.row][x.part]){
+
+      s[x.row][x.part] = {
+        c:0,
+        q:x.qty
+      };
+
+    }
+
     s[x.row][x.part].c++;
+
   });
 
-  let html="";
+  let html = "";
 
   Object.keys(s).forEach(r=>{
 
-    let unit=0, qty=0;
+    let totalUnit = 0;
+    let totalQty = 0;
 
-    html+=`<div class="box"><h3>Row ${r}</h3>`;
+    html += `
+
+      <div class="
+        summary-box
+        ${latestRowFocus==r ? 'summary-focus' : ''}
+      ">
+
+      <div class="summary-title">
+        📍 Row ${r}
+      </div>
+
+    `;
 
     Object.keys(s[r]).forEach(p=>{
 
-      let c=s[r][p].c;
-      let q=s[r][p].q;
-      let total=c*q;
+      let c = s[r][p].c;
+      let q = s[r][p].q;
+      let total = c*q;
 
-      unit+=c;
-      qty+=total;
+      totalUnit += c;
+      totalQty += total;
 
-      html+=`${p} = ${c} × ${q} = ${total} pcs<br>`;
+      html += `
+        ${p}
+        =
+        ${c}
+        ×
+        ${q}
+        =
+        ${total}
+        pcs
+        <br>
+      `;
+
     });
 
-    html+=`<hr><b>Total Unit:</b> ${unit}<br><b>Total Qty:</b> ${qty} pcs</div>`;
+    html += `
+
+      <div class="total-box">
+
+      Total Unit:
+      ${totalUnit}
+      <br>
+
+      Total Qty:
+      ${totalQty}
+      pcs
+
+      </div>
+
+      </div>
+
+    `;
+
   });
 
-  document.getElementById("summary").innerHTML=html;
+  document.getElementById("summary").innerHTML =
+    html;
+
 }
 
-/* CLEAR */
+/* ======================
+   CLEAR
+====================== */
+
 function clearAll(){
-  data=[];
-  scanned=[];
-  tb.innerHTML="";
-  summary.innerHTML="";
+
+  data = [];
+  scanned = [];
+
+  tb.innerHTML = "";
+
+  document.getElementById("summary").innerHTML = "";
+
 }
 
-/* =========================
-   EXPORT EXCEL (FIXED)
-   ========================= */
+/* ======================
+   EXPORT EXCEL
+====================== */
+
 function exportExcel(){
 
-  /* RAW */
-  let ws1 = XLSX.utils.json_to_sheet(data);
+  let wb =
+    XLSX.utils.book_new();
 
-  /* SUMMARY BUILD (same logic as dashboard) */
-  let s={};
+  /* RAW */
+
+  let ws1 =
+    XLSX.utils.json_to_sheet(data);
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws1,
+    "RawData"
+  );
+
+  /* SUMMARY */
+
+  let s = {};
 
   data.forEach(x=>{
-    if(!s[x.row]) s[x.row]={};
-    if(!s[x.row][x.part]) s[x.row][x.part]={c:0,q:x.qty};
+
+    if(!s[x.row]) s[x.row] = {};
+
+    if(!s[x.row][x.part]){
+
+      s[x.row][x.part] = {
+        c:0,
+        q:x.qty
+      };
+
+    }
+
     s[x.row][x.part].c++;
+
   });
 
-  let summarySheet=[];
+  let summarySheet = [];
 
   Object.keys(s).forEach(r=>{
+
+    let totalUnit = 0;
+    let totalQty = 0;
+
     Object.keys(s[r]).forEach(p=>{
+
+      let c = s[r][p].c;
+      let q = s[r][p].q;
+      let total = c*q;
+
+      totalUnit += c;
+      totalQty += total;
+
       summarySheet.push({
+
         Row:r,
         Part:p,
-        Unit:s[r][p].c,
-        Qty:s[r][p].c * s[r][p].q
+        Unit:c,
+        Qty:total
+
       });
+
     });
+
+    summarySheet.push({
+
+      Row:r,
+      Part:"TOTAL",
+      Unit:totalUnit,
+      Qty:totalQty
+
+    });
+
   });
 
-  let ws2 = XLSX.utils.json_to_sheet(summarySheet);
+  let ws2 =
+    XLSX.utils.json_to_sheet(summarySheet);
 
-  /* WORKBOOK */
-  let wb = XLSX.utils.book_new();
+  /* STYLE */
 
-  XLSX.utils.book_append_sheet(wb, ws1, "RawData");
-  XLSX.utils.book_append_sheet(wb, ws2, "Summary");
+  let range =
+    XLSX.utils.decode_range(ws2['!ref']);
 
-  XLSX.writeFile(wb, "inventory_report.xlsx");
+  for(let R=range.s.r; R<=range.e.r; R++){
+
+    for(let C=range.s.c; C<=range.e.c; C++){
+
+      let addr =
+        XLSX.utils.encode_cell({r:R,c:C});
+
+      let cell =
+        ws2[addr];
+
+      if(!cell) continue;
+
+      /* HEADER */
+
+      if(R===0){
+
+        cell.s = {
+
+          font:{
+            bold:true,
+            color:{rgb:"FFFFFF"}
+          },
+
+          fill:{
+            fgColor:{rgb:"4472C4"}
+          }
+
+        };
+
+      }
+
+      /* TOTAL */
+
+      if(cell.v==="TOTAL"){
+
+        for(let i=0;i<=3;i++){
+
+          let totalAddr =
+            XLSX.utils.encode_cell({
+              r:R,
+              c:i
+            });
+
+          if(ws2[totalAddr]){
+
+            ws2[totalAddr].s = {
+
+              font:{
+                bold:true
+              },
+
+              fill:{
+                fgColor:{
+                  rgb:"B7DEE8"
+                }
+              }
+
+            };
+
+          }
+
+        }
+
+      }
+
+    }
+
+  }
+
+  /* AUTO WIDTH */
+
+  let cols = [];
+
+  summarySheet.forEach(row=>{
+
+    Object.keys(row).forEach((k,i)=>{
+
+      let len =
+        String(row[k]).length;
+
+      if(!cols[i])
+        cols[i] = {wch:10};
+
+      if(len > cols[i].wch){
+
+        cols[i].wch = len + 4;
+
+      }
+
+    });
+
+  });
+
+  ws2['!cols'] = cols;
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws2,
+    "Summary"
+  );
+
+  XLSX.writeFile(
+    wb,
+    "inventory_report.xlsx"
+  );
+
 }
 
 </script>
