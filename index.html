@@ -1,506 +1,557 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
   <title>INVENTORY COUNTING SYSTEM</title>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f1f5f9;
+      --surface:  #ffffff;
+      --surface2: #f8fafc;
+      --border:   rgba(0,0,0,0.08);
+      --accent:   #2563eb;
+      --accent2:  #1d4ed8;
+      --text:     #0f172a;
+      --muted:    #64748b;
+      --ok:       #16a34a;
+      --warn:     #d97706;
+      --danger:   #dc2626;
+      --yellow:   rgba(245,158,11,0.08);
+    }
 
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      margin: 0;
-      padding: 20px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
     }
 
-    .container {
-      max-width: 100%;
-      margin: auto;
-      background: white;
-      padding: 24px;
+    /* ===== Top Bar ===== */
+    .topbar {
+      background: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #ffffff;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .clock {
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== Main ===== */
+    .main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* ===== Stats ===== */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.blue  { background: rgba(59,130,246,0.15); }
+    .stat-icon.green { background: rgba(34,197,94,0.15); }
+    .stat-icon.warn  { background: rgba(245,158,11,0.15); }
+    .stat-icon.red   { background: rgba(239,68,68,0.15); }
+
+    .stat-info { min-width: 0; }
+    .stat-num  { font-size: 24px; font-weight: 700; line-height: 1; color: var(--text); }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 0.05em; }
+
+    /* ===== Scan Card ===== */
+    .scan-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      text-align: center;
+      padding: 20px;
       margin-bottom: 20px;
     }
 
     .scan-row {
       display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-      align-items: stretch;
+      gap: 14px;
+      align-items: flex-end;
     }
 
-    .field-group {
-      display: flex;
-      flex-direction: column;
-    }
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-group label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; }
 
-    .row-group {
-      width: 200px;
-    }
-
-    .scan-group {
-      flex: 1;
-    }
-
-    label {
-      margin-bottom: 6px;
-      font-weight: bold;
-    }
-
-    input,
-    select {
-      width: 100%;
-      height: 54px;
-      padding: 14px;
-      font-size: 18px;
-      border: 2px solid #1976d2;
+    select, input[type=text] {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
-      box-sizing: border-box;
-    }
-
-    .status {
-      margin-top: 10px;
-      color: green;
-      font-weight: bold;
-    }
-
-    .button-group {
-      margin-top: 20px;
-      display: flex;
-      gap: 10px;
-    }
-
-    button {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      background: #1976d2;
-      color: white;
-      cursor: pointer;
+      color: var(--text);
       font-size: 15px;
+      padding: 10px 14px;
+      height: 48px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
     }
 
-    button:hover {
-      background: #135ba1;
+    select:focus, input[type=text]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
     }
 
-    .delete-btn {
-      background: #d32f2f;
-      padding: 6px 10px;
+    .row-select { width: 160px; }
+    .scan-input { flex: 1; font-size: 16px; letter-spacing: 0.03em; }
+
+    /* Status badge */
+    .status-wrap { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .status-dot.ok     { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .status-dot.warn   { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+    .status-dot.danger { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+
+    .status-text { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+    /* Duplicate Alert */
+    .dup-alert {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px 16px;
       font-size: 13px;
+      font-weight: 500;
+      color: var(--danger);
+      margin-top: 12px;
     }
 
-    .delete-btn:hover {
-      background: #b71c1c;
+    /* ===== Button Group ===== */
+    .btn-group { display: flex; gap: 8px; margin-bottom: 16px; }
+
+    .btn {
+      padding: 9px 18px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text);
+      background: #ffffff;
+      font-family: inherit;
+      transition: all 0.15s;
+      letter-spacing: 0.03em;
+    }
+    .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+    .btn-danger { background: #fef2f2; border-color: #fecaca; color: var(--danger); }
+    .btn-danger:hover { background: #fee2e2; }
+
+    /* ===== Table ===== */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
     }
 
-    .table-container {
-      width: 100%;
-      max-height: 500px;
-      overflow-x: auto;
-      overflow-y: auto;
-      margin-top: 20px;
-      border: 1px solid #ccc;
-      position: relative;
+    .table-head {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .table-count { font-size: 12px; color: var(--muted); }
+
+    .table-scroll {
+      max-height: 480px;
+      overflow: auto;
     }
 
     table {
-      min-width: 1500px;
+      width: 100%;
+      min-width: 1300px;
       border-collapse: collapse;
       table-layout: fixed;
+      font-size: 13px;
     }
 
-    th,
-    td {
-      border: 1px solid #ccc;
-      padding: 10px;
+    thead th {
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 10px 14px;
       text-align: left;
-      vertical-align: middle;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    th {
-      background: #1976d2;
-      color: white;
+      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 10;
+      white-space: nowrap;
     }
 
-    .location-column,
-    .part-column {
-      width: 220px;
-      min-width: 220px;
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
     }
 
-    .latest-row {
-      background-color: #fff9c4;
-    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fafc; }
 
-    #duplicateAlert {
-      display: none;
-      margin-top: 15px;
-      margin-bottom: 15px;
-      background: #ffebee;
-      color: #c62828;
-      padding: 14px;
-      border-radius: 8px;
-      font-weight: bold;
-    }
+    .latest-row td { background: #fffbeb !important; }
+    .latest-row td:first-child { border-left: 3px solid var(--warn); }
 
+    /* Column widths */
+    th:nth-child(1)  { width: 80px; }
+    th:nth-child(2)  { width: 70px; }
+    th:nth-child(3)  { width: 60px; }
+    th:nth-child(4)  { width: 70px; }
+    th:nth-child(5)  { width: 200px; }
+    th:nth-child(6)  { width: 180px; }
+    th:nth-child(7)  { width: 80px; }
+    th:nth-child(8)  { width: 120px; }
+    th:nth-child(9)  { width: 100px; }
+    th:nth-child(10) { width: 160px; }
+    th:nth-child(11) { width: auto; }
+
+    /* Delete btn */
+    .del-btn {
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: var(--danger);
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .del-btn:hover { background: #fee2e2; }
+
+    /* Remark warn */
+    .remark-warn { color: var(--warn); font-size: 12px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
   </style>
-
 </head>
-
 <body>
 
-  <div class="container">
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-title">INVENTORY COUNTING SYSTEM</div>
+  <div class="topbar-right">
+    <span class="clock" id="clock"></span>
+  </div>
+</div>
 
-    <h1>INVENTORY COUNTING SYSTEM</h1>
+<div class="main">
 
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-icon blue">📦</div>
+      <div class="stat-info">
+        <div class="stat-num" id="st-total">0</div>
+        <div class="stat-label">Total Scanned</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-info">
+        <div class="stat-num" id="st-rows">0</div>
+        <div class="stat-label">Rows Used</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon warn">⚠️</div>
+      <div class="stat-info">
+        <div class="stat-num" id="st-dup">0</div>
+        <div class="stat-label">Duplicate Parts</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon red">🗑️</div>
+      <div class="stat-info">
+        <div class="stat-num" id="st-del">0</div>
+        <div class="stat-label">Deleted</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scan Card -->
+  <div class="scan-card">
     <div class="scan-row">
-
-      <div class="field-group row-group">
-
+      <div class="field-group">
         <label>Select Row</label>
-
-        <select id="rowSelect"></select>
-
+        <select class="row-select" id="rowSelect"></select>
       </div>
-
-      <div class="field-group scan-group">
-
+      <div class="field-group" style="flex:1;">
         <label>Scan QR Code</label>
-
-        <input
-          type="text"
-          id="qrInput"
-          placeholder="Scan QR Code Here..."
-          autofocus
-        />
-
+        <input class="scan-input" type="text" id="qrInput" placeholder="Scan QR Code Here..." autofocus />
       </div>
-
     </div>
-
-    <div id="duplicateAlert">
-
-      Item นี้ ถูกสแกนแล้ว ระบบจะไม่บันทึกข้อมูลซ้ำ กรุณาสแกน Item ถัดไป!
-
+    <div class="status-wrap">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text" id="status">Ready for Scan</div>
     </div>
-
-    <div class="status" id="status">
-
-      Ready for Scan
-
+    <div class="dup-alert" id="duplicateAlert">
+      ⚠️ Item นี้ถูกสแกนแล้ว ระบบจะไม่บันทึกข้อมูลซ้ำ กรุณาสแกน Item ถัดไป!
     </div>
+  </div>
 
-    <div class="button-group">
+  <!-- Buttons -->
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="exportExcel()">⬇ Export Excel</button>
+    <button class="btn btn-danger" onclick="clearTable()">🗑 Clear Data</button>
+  </div>
 
-      <button onclick="exportExcel()">
-        Export Excel
-      </button>
-
-      <button onclick="clearTable()">
-        Clear Data
-      </button>
-
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-head">
+      <span class="table-title">Scan Records</span>
+      <span class="table-count" id="tableCount">0 items</span>
     </div>
-
-    <div class="table-container">
-
+    <div class="table-scroll">
       <table id="dataTable">
-
         <thead>
-
           <tr>
-
             <th>Action</th>
             <th>Row</th>
             <th>No.</th>
             <th>Line</th>
-            <th class="location-column">Location</th>
-            <th class="part-column">Part Item</th>
-            <th>Quantity</th>
+            <th>Location</th>
+            <th>Part Item</th>
+            <th>Qty</th>
             <th>PO</th>
-            <th>LOT NO.</th>
+            <th>LOT No.</th>
             <th>Scan Time</th>
             <th>Remark</th>
-
           </tr>
-
         </thead>
-
         <tbody></tbody>
-
       </table>
-
     </div>
-
   </div>
 
-  <script>
+</div>
 
-    const qrInput = document.getElementById('qrInput');
-    const tableBody = document.querySelector('#dataTable tbody');
-    const rowSelect = document.getElementById('rowSelect');
-    const duplicateAlert = document.getElementById('duplicateAlert');
+<script>
+  const qrInput       = document.getElementById('qrInput');
+  const tableBody     = document.querySelector('#dataTable tbody');
+  const rowSelect     = document.getElementById('rowSelect');
+  const dupAlert      = document.getElementById('duplicateAlert');
+  const statusEl      = document.getElementById('status');
+  const statusDot     = document.getElementById('statusDot');
 
-    let rowCount = 0;
-    let scanDataList = [];
-    let scannedItems = [];
+  let rowCount    = 0;
+  let scanDataList = [];
+  let scannedItems = [];
+  let deletedCount = 0;
 
-    // Create Dropdown
-    for (let i = 1; i <= 20; i++) {
+  // Clock
+  function updateClock() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('clock').textContent =
+      d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + '  ' +
+      pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
 
-      const option = document.createElement('option');
+  // Row Dropdown
+  for (let i = 1; i <= 20; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.text  = 'Row ' + i;
+    rowSelect.appendChild(opt);
+  }
 
-      option.value = i;
-      option.text = 'Row ' + i;
+  // Status helper
+  function setStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusDot.className  = 'status-dot ' + (type || '');
+    if (type) setTimeout(() => { statusDot.className = 'status-dot'; statusEl.textContent = 'Ready for Scan'; }, 3000);
+  }
 
-      rowSelect.appendChild(option);
+  // Stats
+  function updateStats() {
+    const rows = [...new Set(scanDataList.map(d => d.Row))];
+    const dups = scanDataList.filter(d => d.Remark !== '').length;
+    document.getElementById('st-total').textContent = scanDataList.length;
+    document.getElementById('st-rows').textContent  = rows.length;
+    document.getElementById('st-dup').textContent   = dups;
+    document.getElementById('st-del').textContent   = deletedCount;
+    document.getElementById('tableCount').textContent = scanDataList.length + ' items';
+  }
 
+  // Scan
+  qrInput.addEventListener('keypress', function(e) {
+    if (e.key !== 'Enter') return;
+    const val = qrInput.value.trim();
+    if (val) { parseQRCode(val); qrInput.value = ''; }
+  });
+
+  function parseQRCode(text) {
+    dupAlert.style.display = 'none';
+    const data     = text.split('|');
+    const line     = data[1] || '-';
+    const location = data[2] || '-';
+    const part     = data[4] || '-';
+    const qty      = data[5] || '-';
+    const po       = data[8] || '-';
+    const lot      = data[9] || '-';
+    const itemKey  = text.trim();
+
+    if (scannedItems.includes(itemKey)) {
+      dupAlert.style.display = 'block';
+      setStatus('Duplicate — ไม่บันทึก', 'danger');
+      return;
     }
 
-    // Scan Event
-    qrInput.addEventListener('keypress', function(event) {
+    scannedItems.push(itemKey);
+    rowCount++;
+    const selectedRow = rowSelect.value;
+    const scanTime    = new Date().toLocaleString('th-TH');
 
-      if (event.key === 'Enter') {
-
-        const value = qrInput.value.trim();
-
-        if (value !== '') {
-
-          parseQRCode(value);
-
-          qrInput.value = '';
-
-        }
-
+    // Check duplicate part across rows
+    let dupRows = [];
+    scanDataList.forEach(item => {
+      if (item.PartItem === part && item.Row != selectedRow && !dupRows.includes(item.Row)) {
+        dupRows.push(item.Row);
       }
-
     });
-
-    // Parse QR
-    function parseQRCode(text) {
-
-      duplicateAlert.style.display = 'none';
-
-      const data = text.split('|');
-
-      const line = data[1] || '-';
-      const location = data[2] || '-';
-      const part = data[4] || '-';
-      const qty = data[5] || '-';
-      const po = data[7] || '-';
-      const lot = data[8] || '-';
-
-      const itemKey = text.trim();
-
-      // Check Full Duplicate
-      if (scannedItems.includes(itemKey)) {
-
-        duplicateAlert.style.display = 'block';
-
-        document.getElementById('status').innerText =
-          'Duplicate Item';
-
-        return;
-
-      }
-
-      scannedItems.push(itemKey);
-
-      rowCount++;
-
-      const selectedRow = rowSelect.value;
-
-      const scanTime = new Date().toLocaleString();
-
-      // Check Duplicate Part Item
-      let duplicateRows = [];
-
-      scanDataList.forEach(function(item) {
-
-        if (
-          item.PartItem === part &&
-          item.Row != selectedRow &&
-          !duplicateRows.includes(item.Row)
-        ) {
-
-          duplicateRows.push(item.Row);
-
-        }
-
-      });
-
-      let remark = '';
-
-      if (duplicateRows.length > 0) {
-
-        remark =
-          'ข้อมูล Part item ซ้ำกับแถวที่ ' +
-          duplicateRows.join(', ');
-
-      }
-
-      // Remove Old Highlight
-      document.querySelectorAll('.latest-row').forEach(function(row) {
-
-        row.classList.remove('latest-row');
-
-      });
-
-      // Create Row
-      const htmlRow = `
-        <tr class="latest-row">
-
-          <td>
-            <button
-              class="delete-btn"
-              onclick="deleteRow('${itemKey}', this)"
-            >
-              Delete
-            </button>
-          </td>
-
-          <td>${selectedRow}</td>
-          <td>${rowCount}</td>
-          <td>${line}</td>
-          <td class="location-column">${location}</td>
-          <td class="part-column">${part}</td>
-          <td>${qty}</td>
-          <td>${po}</td>
-          <td>${lot}</td>
-          <td>${scanTime}</td>
-          <td>${remark}</td>
-
-        </tr>
-      `;
-
-      tableBody.insertAdjacentHTML('beforeend', htmlRow);
-
-      // Scroll ล่าสุด
-      const latestRow = tableBody.lastElementChild;
-
-      latestRow.scrollIntoView({
-
-        behavior: 'smooth',
-        block: 'center'
-
-      });
-
-      // Save Data
-      scanDataList.push({
-
-        Row: selectedRow,
-        No: rowCount,
-        Line: line,
-        Location: location,
-        PartItem: part,
-        Quantity: qty,
-        PO: po,
-        LOTNO: lot,
-        ScanTime: scanTime,
-        Remark: remark,
-        itemKey: itemKey
-
-      });
-
-      document.getElementById('status').innerText =
-        'Scan Success';
-
-    }
-
-    // Export Excel
-    function exportExcel() {
-
-      if (scanDataList.length === 0) {
-
-        alert('No data to export');
-
-        return;
-
-      }
-
-      const worksheet =
-        XLSX.utils.json_to_sheet(scanDataList);
-
-      const workbook =
-        XLSX.utils.book_new();
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        'QR Data'
-      );
-
-      const today = new Date();
-
-      const fileName =
-        today.getFullYear() +
-        '-' +
-        String(today.getMonth() + 1).padStart(2, '0') +
-        '-' +
-        String(today.getDate()).padStart(2, '0') +
-        '.xlsx';
-
-      XLSX.writeFile(workbook, fileName);
-
-    }
-
-    // Delete Row
-    function deleteRow(itemKey, button) {
-
-      const row = button.closest('tr');
-
-      row.remove();
-
-      scanDataList =
-        scanDataList.filter(function(item) {
-
-          return item.itemKey !== itemKey;
-
-        });
-
-      scannedItems =
-        scannedItems.filter(function(item) {
-
-          return item !== itemKey;
-
-        });
-
-    }
-
-    // Clear Table
-    function clearTable() {
-
-      tableBody.innerHTML = '';
-
-      scanDataList = [];
-      scannedItems = [];
-      rowCount = 0;
-
-      duplicateAlert.style.display = 'none';
-
-      document.getElementById('status').innerText =
-        'Data Cleared';
-
-    }
-
-  </script>
-
+    const remark = dupRows.length > 0 ? 'Part ซ้ำกับแถวที่ ' + dupRows.join(', ') : '';
+
+    // Remove highlight
+    document.querySelectorAll('.latest-row').forEach(r => r.classList.remove('latest-row'));
+
+    const remarkCell = remark
+      ? `<td class="remark-warn">⚠ ${remark}</td>`
+      : `<td style="color:var(--muted);">—</td>`;
+
+    const tr = document.createElement('tr');
+    tr.className = 'latest-row';
+    tr.innerHTML = `
+      <td><button class="del-btn" onclick="deleteRow('${itemKey}', this)">Delete</button></td>
+      <td>${selectedRow}</td>
+      <td>${rowCount}</td>
+      <td>${line}</td>
+      <td>${location}</td>
+      <td><strong>${part}</strong></td>
+      <td>${qty}</td>
+      <td>${po}</td>
+      <td>${lot}</td>
+      <td style="color:var(--muted); font-size:12px;">${scanTime}</td>
+      ${remark ? `<td class="remark-warn">⚠ ${remark}</td>` : `<td style="color:var(--muted);">—</td>`}
+    `;
+    tableBody.appendChild(tr);
+    tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    scanDataList.push({ Row: selectedRow, No: rowCount, Line: line, Location: location,
+      PartItem: part, Quantity: qty, PO: po, LOTNO: lot, ScanTime: scanTime, Remark: remark, itemKey });
+
+    setStatus('✓ Scan Success — ' + part, 'ok');
+    updateStats();
+  }
+
+  // Delete
+  function deleteRow(itemKey, btn) {
+    btn.closest('tr').remove();
+    scanDataList  = scanDataList.filter(d => d.itemKey !== itemKey);
+    scannedItems  = scannedItems.filter(d => d !== itemKey);
+    deletedCount++;
+    updateStats();
+  }
+
+  // Export
+  function exportExcel() {
+    if (!scanDataList.length) { alert('No data to export'); return; }
+    const ws = XLSX.utils.json_to_sheet(scanDataList.map(({ itemKey, ...rest }) => rest));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'QR Data');
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    XLSX.writeFile(wb, `inventory_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.xlsx`);
+  }
+
+  // Clear
+  function clearTable() {
+    if (!scanDataList.length) return;
+    if (!confirm('ต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?')) return;
+    tableBody.innerHTML = '';
+    scanDataList = []; scannedItems = []; rowCount = 0; deletedCount = 0;
+    dupAlert.style.display = 'none';
+    setStatus('Data Cleared', 'warn');
+    updateStats();
+  }
+</script>
 </body>
 </html>
