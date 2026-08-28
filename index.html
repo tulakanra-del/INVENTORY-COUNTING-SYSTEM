@@ -1,15 +1,25 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
 <head>
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
 <title>INVENTORY COUNTING SYSTEM</title>
 
-<!-- Excel -->
+<!-- ============================================================
+     EXCEL LIBRARY
+============================================================ -->
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
+
 <style>
+
+/* ============================================================
+   BODY
+============================================================ */
 
 body{
   font-family:Arial,sans-serif;
@@ -18,6 +28,11 @@ body{
   padding:20px;
   color:#111;
 }
+
+
+/* ============================================================
+   CONTAINER
+============================================================ */
 
 .container{
   max-width:1300px;
@@ -28,13 +43,19 @@ body{
   box-shadow:0 6px 18px rgba(0,0,0,0.08);
 }
 
+
+/* ============================================================
+   TITLE
+============================================================ */
+
 h2{
   margin-top:0;
 }
 
-/* ======================
+
+/* ============================================================
    INPUT
-====================== */
+============================================================ */
 
 .scan-row{
   display:flex;
@@ -42,7 +63,8 @@ h2{
   margin-bottom:15px;
 }
 
-input,select{
+input,
+select{
   width:100%;
   padding:14px;
   font-size:16px;
@@ -51,9 +73,10 @@ input,select{
   box-sizing:border-box;
 }
 
-/* ======================
+
+/* ============================================================
    BUTTON
-====================== */
+============================================================ */
 
 button{
   padding:12px 16px;
@@ -81,9 +104,10 @@ button{
   font-size:12px;
 }
 
-/* ======================
+
+/* ============================================================
    TABLE
-====================== */
+============================================================ */
 
 .table-container{
   margin-top:20px;
@@ -98,7 +122,8 @@ table{
   border-collapse:collapse;
 }
 
-th,td{
+th,
+td{
   border:1px solid #e5e7eb;
   padding:8px;
   font-size:13px;
@@ -116,9 +141,10 @@ th{
   background:#fff7cc;
 }
 
-/* ======================
+
+/* ============================================================
    SUMMARY DASHBOARD
-====================== */
+============================================================ */
 
 #summaryWrapper{
   margin-top:20px;
@@ -158,9 +184,10 @@ th{
   font-weight:bold;
 }
 
-/* ======================
+
+/* ============================================================
    ALERT
-====================== */
+============================================================ */
 
 #duplicateAlert{
   display:none;
@@ -176,11 +203,17 @@ th{
 
 </head>
 
+
 <body>
 
 <div class="container">
 
 <h2>📦 INVENTORY COUNT SYSTEM</h2>
+
+
+<!-- ============================================================
+     SCAN INPUT
+============================================================ -->
 
 <div class="scan-row">
 
@@ -194,78 +227,135 @@ th{
 
 </div>
 
+
+<!-- ============================================================
+     DUPLICATE ALERT
+============================================================ -->
+
 <div id="duplicateAlert">
-⚠ Duplicate Item
+  ⚠ Duplicate Item
 </div>
 
-<button class="btn-blue" onclick="exportExcel()">
-Export Excel
+
+<!-- ============================================================
+     BUTTON
+============================================================ -->
+
+<button
+  class="btn-blue"
+  onclick="exportExcel()"
+>
+  Export Excel
 </button>
 
-<button class="btn-red" onclick="clearAll()">
-Clear
+
+<button
+  class="btn-red"
+  onclick="clearAll()"
+>
+  Clear
 </button>
 
-<!-- TABLE -->
+
+<!-- ============================================================
+     SCAN TABLE
+     
+     IMPORTANT:
+     Qty ถูกลบออกจากการแสดงผลหน้าเว็บตามคำสั่ง
+     
+     แต่ Qty ยังอยู่ใน data และ RawData
+============================================================ -->
+
 <div class="table-container">
 
 <table>
 
 <thead>
+
 <tr>
+
 <th>Row</th>
+
 <th>No</th>
+
 <th>Line</th>
+
 <th>Location</th>
+
 <th>Part</th>
-<th>Qty</th>
+
 <th>PO</th>
+
 <th>LOT</th>
+
 <th>Remark</th>
+
 <th>Time</th>
+
 <th>Action</th>
+
 </tr>
+
 </thead>
 
+
 <tbody id="tb"></tbody>
+
 
 </table>
 
 </div>
 
-<!-- SUMMARY -->
+
+<!-- ============================================================
+     SUMMARY
+============================================================ -->
+
 <div id="summaryWrapper">
 
 <div id="summary"></div>
 
 </div>
 
+
 </div>
+
 
 <script>
 
-/* ======================
+
+/* ============================================================
    GLOBAL
-====================== */
+============================================================ */
 
 let data = [];
+
 let scanned = [];
+
 let latestRowFocus = "";
 
+
+/* ============================================================
+   DOM ELEMENT
+============================================================ */
+
 const tb =
-document.getElementById("tb");
+  document.getElementById("tb");
+
 
 const qr =
-document.getElementById("qrInput");
+  document.getElementById("qrInput");
+
 
 const rowSelect =
-document.getElementById("rowSelect");
+  document.getElementById("rowSelect");
 
-/* ======================
+
+/* ============================================================
    CREATE ROW SELECT
-====================== */
+============================================================ */
 
-for(let i=1;i<=20;i++){
+for(let i = 1; i <= 20; i++){
 
   rowSelect.innerHTML += `
     <option value="${i}">
@@ -275,73 +365,158 @@ for(let i=1;i<=20;i++){
 
 }
 
-/* ======================
+
+/* ============================================================
    SCAN EVENT
-====================== */
+============================================================ */
 
-qr.addEventListener("keypress",e=>{
+qr.addEventListener(
+  "keypress",
+  e => {
 
-  if(e.key==="Enter"){
+    if(e.key === "Enter"){
 
-    scan(qr.value);
+      scan(qr.value);
 
-    qr.value="";
+      qr.value = "";
+
+    }
 
   }
+);
 
-});
 
-/* ======================
+/* ============================================================
    SCAN FUNCTION
-====================== */
+============================================================ */
 
 function scan(v){
 
-  document.getElementById("duplicateAlert").style.display="none";
+  document
+    .getElementById("duplicateAlert")
+    .style.display = "none";
 
-  if(scanned.includes(v)){
 
-    document.getElementById("duplicateAlert").style.display="block";
+  /* ------------------------------------------------------------
+     Validate Empty QR
+  ------------------------------------------------------------ */
+
+  if(!v || !v.trim()){
+
+    qr.focus();
 
     return;
 
   }
 
+
+  v = v.trim();
+
+
+  /* ------------------------------------------------------------
+     Duplicate QR
+  ------------------------------------------------------------ */
+
+  if(scanned.includes(v)){
+
+    document
+      .getElementById("duplicateAlert")
+      .style.display = "block";
+
+    qr.focus();
+
+    return;
+
+  }
+
+
+  /* ------------------------------------------------------------
+     Save Scanned QR
+  ------------------------------------------------------------ */
+
   scanned.push(v);
 
-  const d = v.split("|");
 
-  const row = rowSelect.value;
+  /* ------------------------------------------------------------
+     Split QR
+  ------------------------------------------------------------ */
 
-  latestRowFocus = row;
+  const d =
+    v.split("|");
 
-  const line = d[1] || "-";
-  const location = d[2] || "-";
-  const part = d[4] || "-";
-  const qty = parseInt(d[5]) || 0;
-  const po = d[7] || "-";
-  const lot = d[8] || "-";
+
+  const row =
+    rowSelect.value;
+
+
+  latestRowFocus =
+    row;
+
+
+  /* ------------------------------------------------------------
+     QR DATA
+     
+     ตำแหน่งเดิมของระบบ
+  ------------------------------------------------------------ */
+
+  const line =
+    d[1] || "-";
+
+
+  const location =
+    d[2] || "-";
+
+
+  const part =
+    d[4] || "-";
+
+
+  const qty =
+    parseInt(d[5]) || 0;
+
+
+  const po =
+    d[7] || "-";
+
+
+  const lot =
+    d[8] || "-";
+
+
+  /* ------------------------------------------------------------
+     TIME
+  ------------------------------------------------------------ */
 
   const time =
     new Date().toLocaleString();
 
-  /* REMARK */
+
+  /* ============================================================
+     REMARK
+  ============================================================ */
 
   let duplicateRows = [];
 
-  data.forEach(item=>{
+
+  data.forEach(item => {
 
     if(
       item.part === part &&
       item.row !== row &&
       !duplicateRows.includes(item.row)
     ){
-      duplicateRows.push(item.row);
+
+      duplicateRows.push(
+        item.row
+      );
+
     }
 
   });
 
+
   let remark = "";
+
 
   if(duplicateRows.length > 0){
 
@@ -351,61 +526,115 @@ function scan(v){
 
   }
 
-  /* PUSH */
+
+  /* ============================================================
+     PUSH DATA
+     
+     Qty ยังคงเก็บไว้ตรงนี้
+     แม้จะไม่แสดงในหน้าเว็บ
+  ============================================================ */
 
   data.push({
 
-    row,
-    line,
-    location,
-    part,
-    qty,
-    po,
-    lot,
-    remark,
-    time,
-    key:v
+    row: row,
+
+    line: line,
+
+    location: location,
+
+    part: part,
+
+    qty: qty,
+
+    po: po,
+
+    lot: lot,
+
+    remark: remark,
+
+    time: time,
+
+    key: v
 
   });
 
+
+  /* ------------------------------------------------------------
+     Render
+  ------------------------------------------------------------ */
+
   render();
+
+
+  /* ------------------------------------------------------------
+     Focus Scanner
+  ------------------------------------------------------------ */
 
   qr.focus();
 
 }
 
-/* ======================
+
+/* ============================================================
    RENDER TABLE
-====================== */
+============================================================ */
 
 function render(){
 
-  tb.innerHTML="";
+  tb.innerHTML = "";
 
-  data.forEach((x,i)=>{
+
+  data.forEach((x, i) => {
 
     tb.innerHTML += `
 
-      <tr class="${i===data.length-1?'latest':''}">
-
-        <td>${x.row}</td>
-        <td>${i+1}</td>
-        <td>${x.line}</td>
-        <td>${x.location}</td>
-        <td>${x.part}</td>
-        <td>${x.qty}</td>
-        <td>${x.po}</td>
-        <td>${x.lot}</td>
-        <td>${x.remark}</td>
-        <td>${x.time}</td>
+      <tr class="${i === data.length - 1 ? 'latest' : ''}">
 
         <td>
+          ${escapeHtml(x.row)}
+        </td>
+
+        <td>
+          ${i + 1}
+        </td>
+
+        <td>
+          ${escapeHtml(x.line)}
+        </td>
+
+        <td>
+          ${escapeHtml(x.location)}
+        </td>
+
+        <td>
+          ${escapeHtml(x.part)}
+        </td>
+
+        <td>
+          ${escapeHtml(x.po)}
+        </td>
+
+        <td>
+          ${escapeHtml(x.lot)}
+        </td>
+
+        <td>
+          ${escapeHtml(x.remark)}
+        </td>
+
+        <td>
+          ${escapeHtml(x.time)}
+        </td>
+
+        <td>
+
           <button
             class="del-btn"
             onclick="del(${i})"
           >
             Delete
           </button>
+
         </td>
 
       </tr>
@@ -414,153 +643,462 @@ function render(){
 
   });
 
-  /* TABLE AUTO SCROLL ONLY */
-  const tableBox =
-    document.querySelector(".table-container");
 
-  tableBox.scrollTop =
-    tableBox.scrollHeight;
+  /* ============================================================
+     TABLE AUTO SCROLL
+  ============================================================ */
+
+  const tableBox =
+    document.querySelector(
+      ".table-container"
+    );
+
+
+  if(tableBox){
+
+    tableBox.scrollTop =
+      tableBox.scrollHeight;
+
+  }
+
+
+  /* ============================================================
+     SUMMARY
+  ============================================================ */
 
   renderSummary();
 
 }
 
-/* ======================
+
+/* ============================================================
+   HTML SAFE
+============================================================ */
+
+function escapeHtml(value){
+
+  if(value === null ||
+     value === undefined){
+
+    return "";
+
+  }
+
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+/* ============================================================
    DELETE
-====================== */
+============================================================ */
 
 function del(i){
 
-  scanned =
-    scanned.filter(x=>x!==data[i].key);
+  if(
+    i < 0 ||
+    i >= data.length
+  ){
 
-  data.splice(i,1);
+    return;
+
+  }
+
+
+  scanned =
+    scanned.filter(
+      x => x !== data[i].key
+    );
+
+
+  data.splice(i, 1);
+
 
   render();
 
 }
 
-/* ======================
+
+/* ============================================================
    SUMMARY DASHBOARD
-====================== */
+     
+   หลักการใหม่:
+     
+   Row เดียวกัน
+   Part ชื่อเดียวกัน
+   => รวมเป็น 1 รายการ
+     
+   Unit = จำนวนครั้งที่ Part ถูก Scan
+     
+   Qty = ผลรวม Qty จริงทั้งหมด
+     
+   ตัวอย่าง:
+     
+   VG79 Qty 100
+   VG79 Qty 100
+     
+   จะได้:
+     
+   VG79 | Unit 2 | Qty 200
+============================================================ */
 
 function renderSummary(){
 
-  let s = {};
+  /* ------------------------------------------------------------
+     Summary Object
+  ------------------------------------------------------------ */
 
-  data.forEach(x=>{
+  let summaryData = {};
 
-    if(!s[x.row]) s[x.row] = {};
 
-    if(!s[x.row][x.part]){
+  /* ------------------------------------------------------------
+     Group By Row + Part
+  ------------------------------------------------------------ */
 
-      s[x.row][x.part] = {
-        c:0,
-        q:x.qty
+  data.forEach(x => {
+
+    const row =
+      String(x.row);
+
+
+    const part =
+      String(x.part || "-").trim();
+
+
+    if(!summaryData[row]){
+
+      summaryData[row] = {};
+
+    }
+
+
+    if(!summaryData[row][part]){
+
+      summaryData[row][part] = {
+
+        unit: 0,
+
+        qty: 0
+
       };
 
     }
 
-    s[x.row][x.part].c++;
+
+    /* ----------------------------------------------------------
+       Unit
+       
+       จำนวนครั้งที่ Part ถูก Scan
+    ---------------------------------------------------------- */
+
+    summaryData[row][part].unit++;
+
+
+    /* ----------------------------------------------------------
+       Qty
+       
+       รวม Qty ของทุก Scan
+    ---------------------------------------------------------- */
+
+    const currentQty =
+      Number(x.qty);
+
+
+    if(Number.isFinite(currentQty)){
+
+      summaryData[row][part].qty +=
+        currentQty;
+
+    }
 
   });
 
+
+  /* ------------------------------------------------------------
+     Empty
+  ------------------------------------------------------------ */
+
+  if(
+    Object.keys(summaryData).length === 0
+  ){
+
+    document.getElementById("summary").innerHTML =
+      "";
+
+    return;
+
+  }
+
+
+  /* ------------------------------------------------------------
+     HTML
+  ------------------------------------------------------------ */
+
   let html = "";
 
-  Object.keys(s).forEach(r=>{
 
-    let totalUnit = 0;
-    let totalQty = 0;
+  Object.keys(summaryData)
+    .sort(
+      (a,b) =>
+        Number(a) - Number(b)
+    )
+    .forEach(r => {
 
-    html += `
 
-      <div class="
-        summary-box
-        ${latestRowFocus==r ? 'summary-focus' : ''}
-      ">
+      let totalUnit = 0;
 
-      <div class="summary-title">
-        📍 Row ${r}
-      </div>
+      let totalQty = 0;
 
-    `;
-
-    Object.keys(s[r]).forEach(p=>{
-
-      let c = s[r][p].c;
-      let q = s[r][p].q;
-      let total = c*q;
-
-      totalUnit += c;
-      totalQty += total;
 
       html += `
-        ${p}
-        =
-        ${c}
-        ×
-        ${q}
-        =
-        ${total}
-        pcs
-        <br>
+
+        <div class="
+          summary-box
+          ${latestRowFocus == r
+            ? 'summary-focus'
+            : ''}
+        ">
+
+          <div class="summary-title">
+            📍 Row ${escapeHtml(r)}
+          </div>
+
+
+          <table
+            style="
+              width:100%;
+              border-collapse:collapse;
+            "
+          >
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Part
+                </th>
+
+                <th>
+                  Unit
+                </th>
+
+                <th>
+                  Qty
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+      `;
+
+
+      /* ----------------------------------------------------------
+         Parts
+      ---------------------------------------------------------- */
+
+      Object.keys(summaryData[r])
+        .forEach(p => {
+
+
+          const unit =
+            summaryData[r][p].unit;
+
+
+          const qty =
+            summaryData[r][p].qty;
+
+
+          totalUnit +=
+            unit;
+
+
+          totalQty +=
+            qty;
+
+
+          html += `
+
+            <tr>
+
+              <td>
+                ${escapeHtml(p)}
+              </td>
+
+              <td
+                style="
+                  text-align:center;
+                "
+              >
+                ${unit}
+              </td>
+
+              <td
+                style="
+                  text-align:center;
+                "
+              >
+                ${qty}
+              </td>
+
+            </tr>
+
+          `;
+
+        });
+
+
+      /* ----------------------------------------------------------
+         TOTAL
+      ---------------------------------------------------------- */
+
+      html += `
+
+            </tbody>
+
+
+            <tfoot>
+
+              <tr>
+
+                <td>
+                  <b>TOTAL</b>
+                </td>
+
+                <td
+                  style="
+                    text-align:center;
+                  "
+                >
+                  <b>
+                    ${totalUnit}
+                  </b>
+                </td>
+
+                <td
+                  style="
+                    text-align:center;
+                  "
+                >
+                  <b>
+                    ${totalQty}
+                  </b>
+                </td>
+
+              </tr>
+
+            </tfoot>
+
+          </table>
+
+
+        </div>
+
       `;
 
     });
 
-    html += `
 
-      <div class="total-box">
-
-      Total Unit:
-      ${totalUnit}
-      <br>
-
-      Total Qty:
-      ${totalQty}
-      pcs
-
-      </div>
-
-      </div>
-
-    `;
-
-  });
+  /* ------------------------------------------------------------
+     Display
+  ------------------------------------------------------------ */
 
   document.getElementById("summary").innerHTML =
     html;
 
 }
 
-/* ======================
+
+/* ============================================================
    CLEAR
-====================== */
+============================================================ */
 
 function clearAll(){
 
   data = [];
+
   scanned = [];
 
-  tb.innerHTML = "";
+  latestRowFocus = "";
 
-  document.getElementById("summary").innerHTML = "";
+
+  tb.innerHTML =
+    "";
+
+
+  document.getElementById("summary").innerHTML =
+    "";
+
+
+  document
+    .getElementById("duplicateAlert")
+    .style.display =
+    "none";
+
+
+  qr.focus();
 
 }
 
-/* ======================
+
+/* ============================================================
    EXPORT EXCEL
-====================== */
+============================================================ */
 
 function exportExcel(){
+
+  /* ------------------------------------------------------------
+     Create Workbook
+  ------------------------------------------------------------ */
 
   let wb =
     XLSX.utils.book_new();
 
-  /* RAW */
+
+  /* ============================================================
+     RAW DATA
+     
+     Qty ยังอยู่ใน RawData
+  ============================================================ */
+
+  let rawData = data.map(x => ({
+
+    Row: x.row,
+
+    Line: x.line,
+
+    Location: x.location,
+
+    Part: x.part,
+
+    Qty: Number(x.qty) || 0,
+
+    PO: x.po,
+
+    LOT: x.lot,
+
+    Remark: x.remark,
+
+    Time: x.time
+
+  }));
+
 
   let ws1 =
-    XLSX.utils.json_to_sheet(data);
+    XLSX.utils.json_to_sheet(
+      rawData
+    );
+
 
   XLSX.utils.book_append_sheet(
     wb,
@@ -568,131 +1106,277 @@ function exportExcel(){
     "RawData"
   );
 
-  /* SUMMARY */
 
-  let s = {};
+  /* ============================================================
+     SUMMARY
+     
+     Group:
+       Row + Part
+     
+     Unit:
+       จำนวนครั้งที่ Scan
+     
+     Qty:
+       รวม Qty จริงทั้งหมด
+  ============================================================ */
 
-  data.forEach(x=>{
+  let summaryData = {};
 
-    if(!s[x.row]) s[x.row] = {};
 
-    if(!s[x.row][x.part]){
+  data.forEach(x => {
 
-      s[x.row][x.part] = {
-        c:0,
-        q:x.qty
+    const row =
+      String(x.row);
+
+
+    const part =
+      String(x.part || "-").trim();
+
+
+    if(!summaryData[row]){
+
+      summaryData[row] = {};
+
+    }
+
+
+    if(!summaryData[row][part]){
+
+      summaryData[row][part] = {
+
+        unit: 0,
+
+        qty: 0
+
       };
 
     }
 
-    s[x.row][x.part].c++;
+
+    /* ----------------------------------------------------------
+       Unit
+    ---------------------------------------------------------- */
+
+    summaryData[row][part].unit++;
+
+
+    /* ----------------------------------------------------------
+       Qty
+    ---------------------------------------------------------- */
+
+    const qty =
+      Number(x.qty);
+
+
+    if(Number.isFinite(qty)){
+
+      summaryData[row][part].qty +=
+        qty;
+
+    }
 
   });
 
+
+  /* ============================================================
+     BUILD SUMMARY SHEET
+  ============================================================ */
+
   let summarySheet = [];
 
-  Object.keys(s).forEach(r=>{
 
-    let totalUnit = 0;
-    let totalQty = 0;
+  Object.keys(summaryData)
+    .sort(
+      (a,b) =>
+        Number(a) - Number(b)
+    )
+    .forEach(r => {
 
-    Object.keys(s[r]).forEach(p=>{
 
-      let c = s[r][p].c;
-      let q = s[r][p].q;
-      let total = c*q;
+      let totalUnit = 0;
 
-      totalUnit += c;
-      totalQty += total;
+      let totalQty = 0;
+
+
+      Object.keys(summaryData[r])
+        .forEach(p => {
+
+
+          const unit =
+            summaryData[r][p].unit;
+
+
+          const qty =
+            summaryData[r][p].qty;
+
+
+          totalUnit +=
+            unit;
+
+
+          totalQty +=
+            qty;
+
+
+          summarySheet.push({
+
+            Row: r,
+
+            Part: p,
+
+            Unit: unit,
+
+            Qty: qty
+
+          });
+
+        });
+
+
+      /* --------------------------------------------------------
+         TOTAL
+      -------------------------------------------------------- */
 
       summarySheet.push({
 
-        Row:r,
-        Part:p,
-        Unit:c,
-        Qty:total
+        Row: r,
+
+        Part: "TOTAL",
+
+        Unit: totalUnit,
+
+        Qty: totalQty
 
       });
 
     });
 
-    summarySheet.push({
 
-      Row:r,
-      Part:"TOTAL",
-      Unit:totalUnit,
-      Qty:totalQty
-
-    });
-
-  });
+  /* ============================================================
+     CREATE SUMMARY WORKSHEET
+  ============================================================ */
 
   let ws2 =
-    XLSX.utils.json_to_sheet(summarySheet);
+    XLSX.utils.json_to_sheet(
+      summarySheet
+    );
 
-  /* STYLE */
 
-  let range =
-    XLSX.utils.decode_range(ws2['!ref']);
+  /* ============================================================
+     SUMMARY STYLE
+  ============================================================ */
 
-  for(let R=range.s.r; R<=range.e.r; R++){
+  if(ws2["!ref"]){
 
-    for(let C=range.s.c; C<=range.e.c; C++){
+    let range =
+      XLSX.utils.decode_range(
+        ws2["!ref"]
+      );
 
-      let addr =
-        XLSX.utils.encode_cell({r:R,c:C});
 
-      let cell =
-        ws2[addr];
+    for(
+      let R = range.s.r;
+      R <= range.e.r;
+      R++
+    ){
 
-      if(!cell) continue;
+      for(
+        let C = range.s.c;
+        C <= range.e.c;
+        C++
+      ){
 
-      /* HEADER */
+        let addr =
+          XLSX.utils.encode_cell({
+            r:R,
+            c:C
+          });
 
-      if(R===0){
 
-        cell.s = {
+        let cell =
+          ws2[addr];
 
-          font:{
-            bold:true,
-            color:{rgb:"FFFFFF"}
-          },
 
-          fill:{
-            fgColor:{rgb:"4472C4"}
-          }
+        if(!cell)
+          continue;
 
-        };
 
-      }
+        /* ------------------------------------------------------
+           HEADER
+        ------------------------------------------------------ */
 
-      /* TOTAL */
+        if(R === 0){
 
-      if(cell.v==="TOTAL"){
+          cell.s = {
 
-        for(let i=0;i<=3;i++){
+            font:{
 
-          let totalAddr =
-            XLSX.utils.encode_cell({
-              r:R,
-              c:i
-            });
+              bold:true,
 
-          if(ws2[totalAddr]){
-
-            ws2[totalAddr].s = {
-
-              font:{
-                bold:true
-              },
-
-              fill:{
-                fgColor:{
-                  rgb:"B7DEE8"
-                }
+              color:{
+                rgb:"FFFFFF"
               }
 
-            };
+            },
+
+            fill:{
+
+              fgColor:{
+                rgb:"4472C4"
+              }
+
+            }
+
+          };
+
+        }
+
+
+        /* ------------------------------------------------------
+           TOTAL
+        ------------------------------------------------------ */
+
+        if(cell.v === "TOTAL"){
+
+          for(
+            let i = 0;
+            i <= 3;
+            i++
+          ){
+
+            let totalAddr =
+              XLSX.utils.encode_cell({
+
+                r:R,
+
+                c:i
+
+              });
+
+
+            if(ws2[totalAddr]){
+
+              ws2[totalAddr].s = {
+
+                font:{
+
+                  bold:true
+
+                },
+
+                fill:{
+
+                  fgColor:{
+
+                    rgb:"B7DEE8"
+
+                  }
+
+                }
+
+              };
+
+            }
 
           }
 
@@ -704,37 +1388,67 @@ function exportExcel(){
 
   }
 
-  /* AUTO WIDTH */
+
+  /* ============================================================
+     AUTO WIDTH
+  ============================================================ */
 
   let cols = [];
 
-  summarySheet.forEach(row=>{
 
-    Object.keys(row).forEach((k,i)=>{
+  summarySheet.forEach(row => {
 
-      let len =
-        String(row[k]).length;
+    Object.keys(row)
+      .forEach((k,i) => {
 
-      if(!cols[i])
-        cols[i] = {wch:10};
+        let len =
+          String(
+            row[k]
+          ).length;
 
-      if(len > cols[i].wch){
 
-        cols[i].wch = len + 4;
+        if(!cols[i]){
 
-      }
+          cols[i] = {
+            wch:10
+          };
 
-    });
+        }
+
+
+        if(
+          len >
+          cols[i].wch
+        ){
+
+          cols[i].wch =
+            len + 4;
+
+        }
+
+      });
 
   });
 
-  ws2['!cols'] = cols;
+
+  ws2["!cols"] =
+    cols;
+
+
+  /* ============================================================
+     APPEND SUMMARY
+  ============================================================ */
 
   XLSX.utils.book_append_sheet(
     wb,
     ws2,
     "Summary"
   );
+
+
+  /* ============================================================
+     DOWNLOAD
+  ============================================================ */
 
   XLSX.writeFile(
     wb,
@@ -745,5 +1459,7 @@ function exportExcel(){
 
 </script>
 
+
 </body>
 </html>
+```
