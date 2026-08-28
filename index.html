@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -7,18 +8,9 @@
 
 <title>INVENTORY COUNTING SYSTEM</title>
 
-<!-- ============================================================
-     EXCEL LIBRARY
-============================================================ -->
-
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
-
 <style>
-
-/* ============================================================
-   BODY
-============================================================ */
 
 body{
   font-family:Arial,sans-serif;
@@ -27,11 +19,6 @@ body{
   padding:20px;
   color:#111;
 }
-
-
-/* ============================================================
-   CONTAINER
-============================================================ */
 
 .container{
   max-width:1300px;
@@ -42,19 +29,9 @@ body{
   box-shadow:0 6px 18px rgba(0,0,0,0.08);
 }
 
-
-/* ============================================================
-   TITLE
-============================================================ */
-
 h2{
   margin-top:0;
 }
-
-
-/* ============================================================
-   INPUT
-============================================================ */
 
 .scan-row{
   display:flex;
@@ -71,11 +48,6 @@ select{
   border:1px solid #cbd5e1;
   box-sizing:border-box;
 }
-
-
-/* ============================================================
-   BUTTON
-============================================================ */
 
 button{
   padding:12px 16px;
@@ -102,11 +74,6 @@ button{
   border-radius:6px;
   font-size:12px;
 }
-
-
-/* ============================================================
-   TABLE
-============================================================ */
 
 .table-container{
   margin-top:20px;
@@ -139,11 +106,6 @@ th{
 .latest{
   background:#fff7cc;
 }
-
-
-/* ============================================================
-   SUMMARY DASHBOARD
-============================================================ */
 
 #summaryWrapper{
   margin-top:20px;
@@ -183,11 +145,6 @@ th{
   font-weight:bold;
 }
 
-
-/* ============================================================
-   ALERT
-============================================================ */
-
 #duplicateAlert{
   display:none;
   background:#fee2e2;
@@ -202,17 +159,11 @@ th{
 
 </head>
 
-
 <body>
 
 <div class="container">
 
 <h2>📦 INVENTORY COUNT SYSTEM</h2>
-
-
-<!-- ============================================================
-     SCAN INPUT
-============================================================ -->
 
 <div class="scan-row">
 
@@ -226,19 +177,9 @@ th{
 
 </div>
 
-
-<!-- ============================================================
-     DUPLICATE ALERT
-============================================================ -->
-
 <div id="duplicateAlert">
   ⚠ Duplicate Item
 </div>
-
-
-<!-- ============================================================
-     BUTTON
-============================================================ -->
 
 <button
   class="btn-blue"
@@ -246,7 +187,6 @@ th{
 >
   Export Excel
 </button>
-
 
 <button
   class="btn-red"
@@ -258,9 +198,6 @@ th{
 
 <!-- ============================================================
      SCAN TABLE
-
-     Qty ถูกลบออกจากการแสดงผลหน้าเว็บ
-     แต่ Qty ยังอยู่ใน data และ RawData
 ============================================================ -->
 
 <div class="table-container">
@@ -281,6 +218,8 @@ th{
 
 <th>Part</th>
 
+<th>Q'ty</th>
+
 <th>PO</th>
 
 <th>LOT</th>
@@ -295,9 +234,7 @@ th{
 
 </thead>
 
-
 <tbody id="tb"></tbody>
-
 
 </table>
 
@@ -313,7 +250,6 @@ th{
 <div id="summary"></div>
 
 </div>
-
 
 </div>
 
@@ -350,6 +286,7 @@ const rowSelect =
 
 /* ============================================================
    CREATE ROW SELECT
+   Row 1 - 50
 ============================================================ */
 
 for(let i = 1; i <= 50; i++){
@@ -452,8 +389,6 @@ function scan(v){
 
   /* ------------------------------------------------------------
      QR DATA
-     
-     ตำแหน่งเดิมของระบบ
   ------------------------------------------------------------ */
 
   const line =
@@ -468,6 +403,15 @@ function scan(v){
     d[4] || "-";
 
 
+  /* ------------------------------------------------------------
+     Q'TY
+
+     ตัวอย่าง:
+     200073618|T|QC FACT 1|1|VG79Y417H01|53|...
+                                                   ↑
+                                                  Q'ty
+  ------------------------------------------------------------ */
+
   const qty =
     parseInt(d[5]) || 0;
 
@@ -475,6 +419,15 @@ function scan(v){
   const po =
     d[7] || "-";
 
+
+  /* ------------------------------------------------------------
+     LOT
+
+     ตัวอย่าง:
+     ...|9100003596|1930|
+                          ↑
+                         LOT
+  ------------------------------------------------------------ */
 
   const lot =
     d[8] || "-";
@@ -525,10 +478,7 @@ function scan(v){
 
 
   /* ============================================================
-     PUSH DATA
-
-     Qty ยังคงเก็บไว้ตรงนี้
-     แม้จะไม่แสดงในหน้าเว็บ
+     SAVE DATA
   ============================================================ */
 
   data.push({
@@ -562,10 +512,6 @@ function scan(v){
 
   render();
 
-
-  /* ------------------------------------------------------------
-     Focus Scanner
-  ------------------------------------------------------------ */
 
   qr.focus();
 
@@ -605,6 +551,10 @@ function render(){
 
         <td>
           ${escapeHtml(x.part)}
+        </td>
+
+        <td>
+          ${escapeHtml(x.qty)}
         </td>
 
         <td>
@@ -674,8 +624,10 @@ function render(){
 
 function escapeHtml(value){
 
-  if(value === null ||
-     value === undefined){
+  if(
+    value === null ||
+    value === undefined
+  ){
 
     return "";
 
@@ -724,21 +676,24 @@ function del(i){
 
 /* ============================================================
    SUMMARY DASHBOARD
-     
+
    Row เดียวกัน
-   Part ชื่อเดียวกัน
+   Part เดียวกัน
    => รวมเป็น 1 รายการ
-     
-   Unit = จำนวนครั้งที่ Part ถูก Scan
-     
-   Qty = ผลรวม Qty จริงทั้งหมด
+
+   Unit = จำนวนครั้งที่ Scan
+
+   Q'ty = Q'ty ต่อ Scan × Unit
+
+   ตัวอย่าง:
+
+   Q'ty = 53
+   Scan = 3 ครั้ง
+
+   Total Q'ty = 53 × 3 = 159
 ============================================================ */
 
 function renderSummary(){
-
-  /* ------------------------------------------------------------
-     Summary Object
-  ------------------------------------------------------------ */
 
   let summaryData = {};
 
@@ -779,17 +734,15 @@ function renderSummary(){
 
     /* ----------------------------------------------------------
        Unit
-
-       จำนวนครั้งที่ Part ถูก Scan
     ---------------------------------------------------------- */
 
     summaryData[row][part].unit++;
 
 
     /* ----------------------------------------------------------
-       Qty
+       Q'ty
 
-       รวม Qty ของทุก Scan
+       รวม Q'ty จากแต่ละ Scan
     ---------------------------------------------------------- */
 
     const currentQty =
@@ -836,6 +789,7 @@ function renderSummary(){
     )
     .forEach(r => {
 
+
       let totalUnit = 0;
 
       let totalQty = 0;
@@ -875,7 +829,7 @@ function renderSummary(){
                 </th>
 
                 <th>
-                  Qty
+                  Q'ty
                 </th>
 
               </tr>
@@ -951,7 +905,6 @@ function renderSummary(){
 
             </tbody>
 
-
             <tfoot>
 
               <tr>
@@ -985,7 +938,6 @@ function renderSummary(){
             </tfoot>
 
           </table>
-
 
         </div>
 
@@ -1053,8 +1005,8 @@ function exportExcel(){
   /* ============================================================
      RAW DATA
 
-     Qty ยังอยู่ใน RawData
-     และยังใช้ Qty จาก QR เหมือนเดิม
+     Q'ty จาก QR โดยตรง
+     เช่น d[5] = 53
   ============================================================ */
 
   let rawData = data.map(x => ({
@@ -1067,7 +1019,7 @@ function exportExcel(){
 
     Part: x.part,
 
-    Qty: Number(x.qty) || 0,
+    "Q'ty": Number(x.qty) || 0,
 
     PO: x.po,
 
@@ -1102,11 +1054,16 @@ function exportExcel(){
      Unit:
        จำนวนครั้งที่ Scan
 
-     LOT:
-       ค่า LOT จาก QR
+     Q'ty:
+       ผลรวม Q'ty จากทุก Scan
 
-     Qty:
-       LOT × Unit
+     ตัวอย่าง:
+
+       Q'ty = 53
+       Unit = 3
+
+       Summary Q'ty = 53 × 3
+                    = 159
   ============================================================ */
 
   let summaryData = {};
@@ -1135,7 +1092,7 @@ function exportExcel(){
 
         unit: 0,
 
-        lot: 0
+        qty: 0
 
       };
 
@@ -1144,27 +1101,23 @@ function exportExcel(){
 
     /* ----------------------------------------------------------
        Unit
-
-       จำนวนครั้งที่ Scan
     ---------------------------------------------------------- */
 
     summaryData[row][part].unit++;
 
 
     /* ----------------------------------------------------------
-       LOT
-
-       ดึงค่า LOT จาก QR
+       Q'ty
     ---------------------------------------------------------- */
 
-    const lot =
-      Number(x.lot);
+    const qty =
+      Number(x.qty);
 
 
-    if(Number.isFinite(lot)){
+    if(Number.isFinite(qty)){
 
-      summaryData[row][part].lot =
-        lot;
+      summaryData[row][part].qty +=
+        qty;
 
     }
 
@@ -1173,8 +1126,6 @@ function exportExcel(){
 
   /* ============================================================
      BUILD SUMMARY SHEET
-     
-     Qty = LOT × Unit
   ============================================================ */
 
   let summarySheet = [];
@@ -1201,18 +1152,8 @@ function exportExcel(){
             summaryData[r][p].unit;
 
 
-          const lot =
-            summaryData[r][p].lot;
-
-
-          /* ----------------------------------------------------
-             IMPORTANT
-
-             Qty = LOT × Unit
-          ---------------------------------------------------- */
-
           const qty =
-            lot * unit;
+            summaryData[r][p].qty;
 
 
           totalUnit +=
@@ -1229,11 +1170,9 @@ function exportExcel(){
 
             Part: p,
 
-            LOT: lot,
-
             Unit: unit,
 
-            Qty: qty
+            "Q'ty": qty
 
           });
 
@@ -1250,11 +1189,9 @@ function exportExcel(){
 
         Part: "TOTAL",
 
-        LOT: "",
-
         Unit: totalUnit,
 
-        Qty: totalQty
+        "Q'ty": totalQty
 
       });
 
@@ -1354,21 +1291,9 @@ function exportExcel(){
 
         if(cell.v === "TOTAL"){
 
-          /*
-
-             Summary มี 5 Columns:
-
-             Row
-             Part
-             LOT
-             Unit
-             Qty
-
-          */
-
           for(
             let i = 0;
-            i <= 4;
+            i <= 3;
             i++
           ){
 
@@ -1489,6 +1414,6 @@ function exportExcel(){
 
 </script>
 
-
 </body>
 </html>
+```
