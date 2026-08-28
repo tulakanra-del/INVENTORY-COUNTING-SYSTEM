@@ -258,10 +258,8 @@ th{
 
 <!-- ============================================================
      SCAN TABLE
-     
-     IMPORTANT:
-     Qty ถูกลบออกจากการแสดงผลหน้าเว็บตามคำสั่ง
-     
+
+     Qty ถูกลบออกจากการแสดงผลหน้าเว็บ
      แต่ Qty ยังอยู่ใน data และ RawData
 ============================================================ -->
 
@@ -528,7 +526,7 @@ function scan(v){
 
   /* ============================================================
      PUSH DATA
-     
+
      Qty ยังคงเก็บไว้ตรงนี้
      แม้จะไม่แสดงในหน้าเว็บ
   ============================================================ */
@@ -727,8 +725,6 @@ function del(i){
 /* ============================================================
    SUMMARY DASHBOARD
      
-   หลักการใหม่:
-     
    Row เดียวกัน
    Part ชื่อเดียวกัน
    => รวมเป็น 1 รายการ
@@ -736,15 +732,6 @@ function del(i){
    Unit = จำนวนครั้งที่ Part ถูก Scan
      
    Qty = ผลรวม Qty จริงทั้งหมด
-     
-   ตัวอย่าง:
-     
-   VG79 Qty 100
-   VG79 Qty 100
-     
-   จะได้:
-     
-   VG79 | Unit 2 | Qty 200
 ============================================================ */
 
 function renderSummary(){
@@ -792,7 +779,7 @@ function renderSummary(){
 
     /* ----------------------------------------------------------
        Unit
-       
+
        จำนวนครั้งที่ Part ถูก Scan
     ---------------------------------------------------------- */
 
@@ -801,7 +788,7 @@ function renderSummary(){
 
     /* ----------------------------------------------------------
        Qty
-       
+
        รวม Qty ของทุก Scan
     ---------------------------------------------------------- */
 
@@ -848,7 +835,6 @@ function renderSummary(){
         Number(a) - Number(b)
     )
     .forEach(r => {
-
 
       let totalUnit = 0;
 
@@ -1066,8 +1052,9 @@ function exportExcel(){
 
   /* ============================================================
      RAW DATA
-     
+
      Qty ยังอยู่ใน RawData
+     และยังใช้ Qty จาก QR เหมือนเดิม
   ============================================================ */
 
   let rawData = data.map(x => ({
@@ -1108,15 +1095,18 @@ function exportExcel(){
 
   /* ============================================================
      SUMMARY
-     
+
      Group:
        Row + Part
-     
+
      Unit:
        จำนวนครั้งที่ Scan
-     
+
+     LOT:
+       ค่า LOT จาก QR
+
      Qty:
-       รวม Qty จริงทั้งหมด
+       LOT × Unit
   ============================================================ */
 
   let summaryData = {};
@@ -1145,7 +1135,7 @@ function exportExcel(){
 
         unit: 0,
 
-        qty: 0
+        lot: 0
 
       };
 
@@ -1154,23 +1144,27 @@ function exportExcel(){
 
     /* ----------------------------------------------------------
        Unit
+
+       จำนวนครั้งที่ Scan
     ---------------------------------------------------------- */
 
     summaryData[row][part].unit++;
 
 
     /* ----------------------------------------------------------
-       Qty
+       LOT
+
+       ดึงค่า LOT จาก QR
     ---------------------------------------------------------- */
 
-    const qty =
-      Number(x.qty);
+    const lot =
+      Number(x.lot);
 
 
-    if(Number.isFinite(qty)){
+    if(Number.isFinite(lot)){
 
-      summaryData[row][part].qty +=
-        qty;
+      summaryData[row][part].lot =
+        lot;
 
     }
 
@@ -1179,6 +1173,8 @@ function exportExcel(){
 
   /* ============================================================
      BUILD SUMMARY SHEET
+     
+     Qty = LOT × Unit
   ============================================================ */
 
   let summarySheet = [];
@@ -1205,8 +1201,18 @@ function exportExcel(){
             summaryData[r][p].unit;
 
 
+          const lot =
+            summaryData[r][p].lot;
+
+
+          /* ----------------------------------------------------
+             IMPORTANT
+
+             Qty = LOT × Unit
+          ---------------------------------------------------- */
+
           const qty =
-            summaryData[r][p].qty;
+            lot * unit;
 
 
           totalUnit +=
@@ -1222,6 +1228,8 @@ function exportExcel(){
             Row: r,
 
             Part: p,
+
+            LOT: lot,
 
             Unit: unit,
 
@@ -1241,6 +1249,8 @@ function exportExcel(){
         Row: r,
 
         Part: "TOTAL",
+
+        LOT: "",
 
         Unit: totalUnit,
 
@@ -1287,8 +1297,11 @@ function exportExcel(){
 
         let addr =
           XLSX.utils.encode_cell({
+
             r:R,
+
             c:C
+
           });
 
 
@@ -1313,7 +1326,9 @@ function exportExcel(){
               bold:true,
 
               color:{
+
                 rgb:"FFFFFF"
+
               }
 
             },
@@ -1321,7 +1336,9 @@ function exportExcel(){
             fill:{
 
               fgColor:{
+
                 rgb:"4472C4"
+
               }
 
             }
@@ -1337,9 +1354,21 @@ function exportExcel(){
 
         if(cell.v === "TOTAL"){
 
+          /*
+
+             Summary มี 5 Columns:
+
+             Row
+             Part
+             LOT
+             Unit
+             Qty
+
+          */
+
           for(
             let i = 0;
-            i <= 3;
+            i <= 4;
             i++
           ){
 
@@ -1409,7 +1438,9 @@ function exportExcel(){
         if(!cols[i]){
 
           cols[i] = {
+
             wch:10
+
           };
 
         }
